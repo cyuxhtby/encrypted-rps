@@ -24,7 +24,7 @@ contract RockPaperScissors is EIP712WithModifier {
     event Draw();
 
     modifier onlyPlayers() {
-        require(msg.sender == player1.playerAddress || msg.sender == player2.playerAddress, "Only players can call this function");
+        require(msg.sender == player1.playerAddress || msg.sender == player2.playerAddress, "You are not a current player");
         _;
     }
 
@@ -34,20 +34,25 @@ contract RockPaperScissors is EIP712WithModifier {
     }
 
     function joinGame() public {
-        require(player1.playerAddress == address(0) || player2.playerAddress == address(0), "Game is full");
-        
-        if(player1.playerAddress == address(0)) {
-            player1.playerAddress = msg.sender;
-        } else {
-            player2.playerAddress = msg.sender;
-        }
-    }
+    // Check if the game is full
+    require(player1.playerAddress == address(0) || player2.playerAddress == address(0), "Game is full");
+    
+    // Check if the sender is not already one of the players
+    require(msg.sender != player1.playerAddress && msg.sender != player2.playerAddress, "You have already joined the game");
 
+    if(player1.playerAddress == address(0)) {
+        player1.playerAddress = msg.sender;
+    } else {
+        player2.playerAddress = msg.sender;
+    }
+}
+
+    // Gas is higher for second player
     function play(bytes calldata encryptedChoice) public onlyPlayers {
         require(!gameEnded, "Game has ended");
 
         Player storage currentPlayer = (msg.sender == player1.playerAddress) ? player1 : player2;
-        require(!currentPlayer.hasPlayed, "Player has already played");
+        require(!currentPlayer.hasPlayed, "You have already played");
         currentPlayer.encryptedChoice = TFHE.asEuint8(encryptedChoice);
         currentPlayer.hasPlayed = true;
 
